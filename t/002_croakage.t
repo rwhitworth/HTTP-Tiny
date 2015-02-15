@@ -20,15 +20,15 @@ my @cases = (
   ['get'],
   ['get','http://www.example.com/','extra'],
   ['get','http://www.example.com/','extra', 'extra'],
-  ['mirror'],
-  ['mirror','http://www.example.com/',],
-  ['mirror','http://www.example.com/','extra', 'extra'],
-  ['mirror','http://www.example.com/','extra', 'extra', 'extra'],
   ['request'],
   ['request','GET'],
   ['request','GET','http://www.example.com/','extra'],
   ['request','GET','http://www.example.com/','extra', 'extra'],
 );
+#  ['mirror'],
+#  ['mirror','http://www.example.com/',],
+#  ['mirror','http://www.example.com/','extra', 'extra'],
+#  ['mirror','http://www.example.com/','extra', 'extra', 'extra'],
 
 my $res_fh = tmpfile();
 my $req_fh = tmpfile();

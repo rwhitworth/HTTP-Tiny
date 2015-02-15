@@ -11,8 +11,9 @@ my @accessors = qw(
   max_redirect max_size proxy no_proxy timeout SSL_options verify_SSL cookie_jar
 );
 my @methods   = qw(
-  new get head put post delete post_form request mirror www_form_urlencode
+  new get head put post delete request www_form_urlencode
 );
+#  new get head put post delete post_form request mirror www_form_urlencode
 
 my %api;
 @api{@accessors} = (1) x @accessors;

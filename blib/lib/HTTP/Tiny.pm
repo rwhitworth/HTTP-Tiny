@@ -4,7 +4,7 @@ use strict;
 use warnings;
 # ABSTRACT: A small, simple, correct HTTP/1.1 client
 # RPW
-# Removed support for proxies, all POD documentation
+# Removed support for proxies, all POD documentation, POST forms, mirror function
 
 our $VERSION = '0.054';
 
@@ -81,59 +81,6 @@ for my $sub_name ( qw/get head put post delete/ ) {
         return \$self->request('$req_method', \$url, \$args || {});
     }
 HERE
-}
-
-sub post_form {
-    my ($self, $url, $data, $args) = @_;
-    (@_ == 3 || @_ == 4 && ref $args eq 'HASH')
-        or Carp::croak(q/Usage: $http->post_form(URL, DATAREF, [HASHREF])/ . "\n");
-
-    my $headers = {};
-    while ( my ($key, $value) = each %{$args->{headers} || {}} ) {
-        $headers->{lc $key} = $value;
-    }
-    delete $args->{headers};
-
-    return $self->request('POST', $url, {
-            %$args,
-            content => $self->www_form_urlencode($data),
-            headers => {
-                %$headers,
-                'content-type' => 'application/x-www-form-urlencoded'
-            },
-        }
-    );
-}
-
-sub mirror {
-    my ($self, $url, $file, $args) = @_;
-    @_ == 3 || (@_ == 4 && ref $args eq 'HASH')
-      or Carp::croak(q/Usage: $http->mirror(URL, FILE, [HASHREF])/ . "\n");
-    if ( -e $file and my $mtime = (stat($file))[9] ) {
-        $args->{headers}{'if-modified-since'} ||= $self->_http_date($mtime);
-    }
-    my $tempfile = $file . int(rand(2**31));
-
-    require Fcntl;
-    sysopen my $fh, $tempfile, Fcntl::O_CREAT()|Fcntl::O_EXCL()|Fcntl::O_WRONLY()
-       or Carp::croak(qq/Error: Could not create temporary file $tempfile for downloading: $!\n/);
-    binmode $fh;
-    $args->{data_callback} = sub { print {$fh} $_[0] };
-    my $response = $self->request('GET', $url, $args);
-    close $fh
-        or Carp::croak(qq/Error: Caught error closing temporary file $tempfile: $!\n/);
-
-    if ( $response->{success} ) {
-        rename $tempfile, $file
-            or Carp::croak(qq/Error replacing $file with $tempfile: $!\n/);
-        my $lm = $response->{headers}{'last-modified'};
-        if ( $lm and my $mtime = $self->_parse_http_date($lm) ) {
-            utime $mtime, $mtime, $file;
-        }
-    }
-    $response->{success} ||= $response->{status} eq '304';
-    unlink $tempfile;
-    return $response;
 }
 
 my %idempotent = map { $_ => 1 } qw/GET HEAD PUT DELETE OPTIONS TRACE/;
