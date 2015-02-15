@@ -298,18 +298,10 @@ sub _prepare_headers_and_cb {
     }
 
     # if we have Basic auth parameters, add them
-    if ( length $auth && ! defined $request->{headers}{authorization} ) {
-        $self->_add_basic_auth_header( $request, 'authorization' => $auth );
-    }
+#    if ( length $auth && ! defined $request->{headers}{authorization} ) {
+#        $self->_add_basic_auth_header( $request, 'authorization' => $auth );
+#    }
 
-    return;
-}
-
-sub _add_basic_auth_header {
-    my ($self, $request, $header, $auth) = @_;
-    require MIME::Base64;
-    $request->{headers}{$header} =
-        "Basic " . MIME::Base64::encode_base64($auth, "");
     return;
 }
 
