@@ -4,7 +4,7 @@ use strict;
 use warnings;
 # ABSTRACT: A small, simple, correct HTTP/1.1 client
 # RPW
-# Removed support for proxies, all POD documentation, POST forms, mirror function, SSL, cookies, authorization
+# Removed support for proxies, all POD documentation, POST forms, mirror function, SSL, cookies, authorization, default user agent
 
 our $VERSION = '0.054';
 
@@ -36,7 +36,8 @@ sub agent {
     my($self, $agent) = @_;
     if( @_ > 1 ){
         $self->{agent} =
-            (defined $agent && $agent =~ / $/) ? $agent . $self->_agent : $agent;
+#            (defined $agent && $agent =~ / $/) ? $agent . $self->_agent : $agent;
+			  $agent;
     }
     return $self->{agent};
 }
@@ -60,7 +61,7 @@ sub new {
         $self->{$key} = $args{$key} if exists $args{$key}
     }
 
-    $self->agent( exists $args{agent} ? $args{agent} : $class->_agent );
+    $self->agent( exists $args{agent} ? $args{agent} : "HTTP-Tiny/0.054" );
 
 # RPW
 #    $self->_set_proxies;
@@ -155,9 +156,10 @@ my %DefaultPort = (
 );
 
 sub _agent {
-    my $class = ref($_[0]) || $_[0];
-    (my $default_agent = $class) =~ s{::}{-}g;
-    return $default_agent . "/" . $class->VERSION;
+#    my $class = ref($_[0]) || $_[0];
+#    (my $default_agent = $class) =~ s{::}{-}g;
+#    return $default_agent . "/" . $class->VERSION;
+	return "HTTP-Tiny/0.054";
 }
 
 sub _request {

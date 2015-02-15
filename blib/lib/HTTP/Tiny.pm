@@ -36,7 +36,8 @@ sub agent {
     my($self, $agent) = @_;
     if( @_ > 1 ){
         $self->{agent} =
-            (defined $agent && $agent =~ / $/) ? $agent . $self->_agent : $agent;
+#            (defined $agent && $agent =~ / $/) ? $agent . $self->_agent : $agent;
+			  $agent;
     }
     return $self->{agent};
 }
@@ -155,9 +156,10 @@ my %DefaultPort = (
 );
 
 sub _agent {
-    my $class = ref($_[0]) || $_[0];
-    (my $default_agent = $class) =~ s{::}{-}g;
-    return $default_agent . "/" . $class->VERSION;
+#    my $class = ref($_[0]) || $_[0];
+#    (my $default_agent = $class) =~ s{::}{-}g;
+#    return $default_agent . "/" . $class->VERSION;
+	return "HTTP-Tiny/0.054";
 }
 
 sub _request {
