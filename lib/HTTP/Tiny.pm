@@ -240,101 +240,12 @@ sub _open_handle {
         keep_alive      => $self->{keep_alive}
     );
 
-    if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
-        return $self->_proxy_connect( $request, $handle );
-    }
-    else {
+#    if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
+#        return $self->_proxy_connect( $request, $handle );
+#    }
+#    else {
         return $handle->connect($scheme, $host, $port);
-    }
-}
-
-sub _proxy_connect {
-    my ($self, $request, $handle) = @_;
-
-    my @proxy_vars;
-    if ( $request->{scheme} eq 'https' ) {
-        Carp::croak(qq{No https_proxy defined}) unless $self->{https_proxy};
-        @proxy_vars = $self->_split_proxy( https_proxy => $self->{https_proxy} );
-        if ( $proxy_vars[0] eq 'https' ) {
-            Carp::croak(qq{Can't proxy https over https: $request->{uri} via $self->{https_proxy}});
-        }
-    }
-    else {
-        Carp::croak(qq{No http_proxy defined}) unless $self->{http_proxy};
-        @proxy_vars = $self->_split_proxy( http_proxy => $self->{http_proxy} );
-    }
-
-    my ($p_scheme, $p_host, $p_port, $p_auth) = @proxy_vars;
-
-    if ( length $p_auth && ! defined $request->{headers}{'proxy-authorization'} ) {
-        $self->_add_basic_auth_header( $request, 'proxy-authorization' => $p_auth );
-    }
-
-    $handle->connect($p_scheme, $p_host, $p_port);
-
-    if ($request->{scheme} eq 'https') {
-        $self->_create_proxy_tunnel( $request, $handle );
-    }
-    else {
-        # non-tunneled proxy requires absolute URI
-        $request->{uri} = "$request->{scheme}://$request->{host_port}$request->{uri}";
-    }
-
-    return $handle;
-}
-
-sub _split_proxy {
-    my ($self, $type, $proxy) = @_;
-
-    my ($scheme, $host, $port, $path_query, $auth) = eval { $self->_split_url($proxy) };
-
-    unless(
-        defined($scheme) && length($scheme) && length($host) && length($port)
-        && $path_query eq '/'
-    ) {
-        Carp::croak(qq{$type URL must be in format http[s]://[auth@]<host>:<port>/\n});
-    }
-
-    return ($scheme, $host, $port, $auth);
-}
-
-sub _create_proxy_tunnel {
-    my ($self, $request, $handle) = @_;
-
-    $handle->_assert_ssl;
-
-    my $agent = exists($request->{headers}{'user-agent'})
-        ? $request->{headers}{'user-agent'} : $self->{agent};
-
-    my $connect_request = {
-        method    => 'CONNECT',
-        uri       => "$request->{host}:$request->{port}",
-        headers   => {
-            host => "$request->{host}:$request->{port}",
-            'user-agent' => $agent,
-        }
-    };
-
-    if ( $request->{headers}{'proxy-authorization'} ) {
-        $connect_request->{headers}{'proxy-authorization'} =
-            delete $request->{headers}{'proxy-authorization'};
-    }
-
-    $handle->write_request($connect_request);
-    my $response;
-    do { $response = $handle->read_response_header }
-        until (substr($response->{status},0,1) ne '1');
-
-    # if CONNECT failed, throw the response so it will be
-    # returned from the original request() method;
-    unless (substr($response->{status},0,1) eq '2') {
-        die $response;
-    }
-
-    # tunnel established, so start SSL handshake
-    $handle->start_ssl( $request->{host} );
-
-    return;
+#    }
 }
 
 sub _prepare_headers_and_cb {
