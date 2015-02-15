@@ -121,31 +121,6 @@ sub request {
     return $response;
 }
 
-sub www_form_urlencode {
-    my ($self, $data) = @_;
-    (@_ == 2 && ref $data)
-        or Carp::croak(q/Usage: $http->www_form_urlencode(DATAREF)/ . "\n");
-    (ref $data eq 'HASH' || ref $data eq 'ARRAY')
-        or Carp::croak("form data must be a hash or array reference\n");
-
-    my @params = ref $data eq 'HASH' ? %$data : @$data;
-    @params % 2 == 0
-        or Carp::croak("form data reference must have an even number of terms\n");
-
-    my @terms;
-    while( @params ) {
-        my ($key, $value) = splice(@params, 0, 2);
-        if ( ref $value eq 'ARRAY' ) {
-            unshift @params, map { $key => $_ } @$value;
-        }
-        else {
-            push @terms, join("=", map { $self->_uri_escape($_) } $key, $value);
-        }
-    }
-
-    return join("&", (ref $data eq 'ARRAY') ? (@terms) : (sort @terms) );
-}
-
 #--------------------------------------------------------------------------#
 # private methods
 #--------------------------------------------------------------------------#
