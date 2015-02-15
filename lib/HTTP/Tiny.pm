@@ -56,7 +56,7 @@ sub new {
 
     bless $self, $class;
 
-    $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
+#    $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
 
     for my $key ( @attributes ) {
         $self->{$key} = $args{$key} if exists $args{$key}
@@ -196,7 +196,7 @@ sub _request {
     do { $response = $handle->read_response_header }
         until (substr($response->{status},0,1) ne '1');
 
-    $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
+#    $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
 
     if ( my @redir_args = $self->_maybe_redirect($request, $response, $args) ) {
         $handle->close;
@@ -323,31 +323,6 @@ sub _prepare_data_cb {
         }
     }
     return $data_cb;
-}
-
-sub _update_cookie_jar {
-    my ($self, $url, $response) = @_;
-
-    my $cookies = $response->{headers}->{'set-cookie'};
-    return unless defined $cookies;
-
-    my @cookies = ref $cookies ? @$cookies : $cookies;
-
-    $self->cookie_jar->add( $url, $_ ) for @cookies;
-
-    return;
-}
-
-sub _validate_cookie_jar {
-    my ($class, $jar) = @_;
-
-    # duck typing
-    for my $method ( qw/add cookie_header/ ) {
-        Carp::croak(qq/Cookie jar must provide the '$method' method\n/)
-            unless ref($jar) && ref($jar)->can($method);
-    }
-
-    return;
 }
 
 sub _maybe_redirect {
