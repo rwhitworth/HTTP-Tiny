@@ -2,11 +2,11 @@
 package HTTP::Tiny;
 use strict;
 use warnings;
+# ABSTRACT: A small, simple, correct HTTP/1.1 client
+# RPW
+# Removed support for proxies, all POD documentation
 
 our $VERSION = '0.054';
-
-# RPW
-# Removed all cookie handling, POST support for forms, HTTPS/SSL
 
 use Carp ();
 
@@ -56,8 +56,7 @@ sub new {
 
     bless $self, $class;
 
-# RPW	
-#    $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
+    $class->_validate_cookie_jar( $args{cookie_jar} ) if $args{cookie_jar};
 
     for my $key ( @attributes ) {
         $self->{$key} = $args{$key} if exists $args{$key}
@@ -83,7 +82,31 @@ for my $sub_name ( qw/get head put post delete/ ) {
     }
 HERE
 }
-  my ($self, $url, $file, $args) = @_;
+
+sub post_form {
+    my ($self, $url, $data, $args) = @_;
+    (@_ == 3 || @_ == 4 && ref $args eq 'HASH')
+        or Carp::croak(q/Usage: $http->post_form(URL, DATAREF, [HASHREF])/ . "\n");
+
+    my $headers = {};
+    while ( my ($key, $value) = each %{$args->{headers} || {}} ) {
+        $headers->{lc $key} = $value;
+    }
+    delete $args->{headers};
+
+    return $self->request('POST', $url, {
+            %$args,
+            content => $self->www_form_urlencode($data),
+            headers => {
+                %$headers,
+                'content-type' => 'application/x-www-form-urlencoded'
+            },
+        }
+    );
+}
+
+sub mirror {
+    my ($self, $url, $file, $args) = @_;
     @_ == 3 || (@_ == 4 && ref $args eq 'HASH')
       or Carp::croak(q/Usage: $http->mirror(URL, FILE, [HASHREF])/ . "\n");
     if ( -e $file and my $mtime = (stat($file))[9] ) {
@@ -113,89 +136,6 @@ HERE
     return $response;
 }
 
-pod
-#pod     $response = $http->request($method, $url);
-#pod     $response = $http->request($method, $url, \%options);
-#pod
-#pod Executes an HTTP request of the given method type ('GET', 'HEAD', 'POST',
-#pod 'PUT', etc.) on the given URL.  The URL must have unsafe characters escaped and
-#pod international domain names encoded.
-#pod
-#pod If the URL includes a "user:password" stanza, they will be used for Basic-style
-#pod authorization headers.  (Authorization headers will not be included in a
-#pod redirected request.) For example:
-#pod
-#pod     $http->request('GET', 'http://Aladdin:open sesame@example.com/');
-#pod
-#pod If the "user:password" stanza contains reserved characters, they must
-#pod be percent-escaped:
-#pod
-#pod     $http->request('GET', 'http://john%40example.com:password@example.com/');
-#pod
-#pod A hashref of options may be appended to modify the request.
-#pod
-#pod Valid options are:
-#pod
-#pod =for :list
-#pod * C<headers> â€”
-#pod     A hashref containing headers to include with the request.  If the value for
-#pod     a header is an array reference, the header will be output multiple times with
-#pod     each value in the array.  These headers over-write any default headers.
-#pod * C<content> â€”
-#pod     A scalar to include as the body of the request OR a code reference
-#pod     that will be called iteratively to produce the body of the request
-#pod * C<trailer_callback> â€”
-#pod     A code reference that will be called if it exists to provide a hashref
-#pod     of trailing headers (only used with chunked transfer-encoding)
-#pod * C<data_callback> â€”
-#pod     A code reference that will be called for each chunks of the response
-#pod     body received.
-#pod
-#pod The C<Host> header is generated from the URL in accordance with RFC 2616.  It
-#pod is a fatal error to specify C<Host> in the C<headers> option.  Other headers
-#pod may be ignored or overwritten if necessary for transport compliance.
-#pod
-#pod If the C<content> option is a code reference, it will be called iteratively
-#pod to provide the content body of the request.  It should return the empty
-#pod string or undef when the iterator is exhausted.
-#pod
-#pod If the C<content> option is the empty string, no C<content-type> or
-#pod C<content-length> headers will be generated.
-#pod
-#pod If the C<data_callback> option is provided, it will be called iteratively until
-#pod the entire response body is received.  The first argument will be a string
-#pod containing a chunk of the response body, the second argument will be the
-#pod in-progress response hash reference, as described below.  (This allows
-#pod customizing the action of the callback based on the C<status> or C<headers>
-#pod received prior to the content body.)
-#pod
-#pod The C<request> method returns a hashref containing the response.  The hashref
-#pod will have the following keys:
-#pod
-#pod =for :list
-#pod * C<success> â€”
-#pod     Boolean indicating whether the operation returned a 2XX status code
-#pod * C<url> â€”
-#pod     URL that provided the response. This is the URL of the request unless
-#pod     there were redirections, in which case it is the last URL queried
-#pod     in a redirection chain
-#pod * C<status> â€”
-#pod     The HTTP status code of the response
-#pod * C<reason> â€”
-#pod     The response phrase returned by the server
-#pod * C<content> â€”
-#pod     The body of the response.  If the response does not have any content
-#pod     or if a data callback is provided to consume the response body,
-#pod     this will be the empty string
-#pod * C<headers> â€”
-#pod     A hashref of header fields.  All header field names will be normalized
-#pod     to be lower case. If a header is repeated, the value will be an arrayref;
-#pod     it will otherwise be a scalar string containing the value
-#pod
-#pod On an exception during the execution of the request, the C<status> field will
-#pod contain 599, and the C<content> field will contain the text of the exception.
-#pod
-#pod =cut
 my %idempotent = map { $_ => 1 } qw/GET HEAD PUT DELETE OPTIONS TRACE/;
 
 sub request {
@@ -309,8 +249,7 @@ sub _request {
     do { $response = $handle->read_response_header }
         until (substr($response->{status},0,1) ne '1');
 
-# RPW		
-#    $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
+    $self->_update_cookie_jar( $url, $response ) if $self->{cookie_jar};
 
     if ( my @redir_args = $self->_maybe_redirect($request, $response, $args) ) {
         $handle->close;
@@ -354,15 +293,16 @@ sub _open_handle {
         keep_alive      => $self->{keep_alive}
     );
 
-# RPW    
-#	if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
-#       return $self->_proxy_connect( $request, $handle );
-#    }
-#    else {
+    if ($self->{_has_proxy}{$scheme} && ! grep { $host =~ /\Q$_\E$/ } @{$self->{no_proxy}}) {
+        return $self->_proxy_connect( $request, $handle );
+    }
+    else {
         return $handle->connect($scheme, $host, $port);
-#    }
+    }
 }
-   my ($self, $request, $handle) = @_;
+
+sub _proxy_connect {
+    my ($self, $request, $handle) = @_;
 
     my @proxy_vars;
     if ( $request->{scheme} eq 'https' ) {
@@ -394,6 +334,60 @@ sub _open_handle {
     }
 
     return $handle;
+}
+
+sub _split_proxy {
+    my ($self, $type, $proxy) = @_;
+
+    my ($scheme, $host, $port, $path_query, $auth) = eval { $self->_split_url($proxy) };
+
+    unless(
+        defined($scheme) && length($scheme) && length($host) && length($port)
+        && $path_query eq '/'
+    ) {
+        Carp::croak(qq{$type URL must be in format http[s]://[auth@]<host>:<port>/\n});
+    }
+
+    return ($scheme, $host, $port, $auth);
+}
+
+sub _create_proxy_tunnel {
+    my ($self, $request, $handle) = @_;
+
+    $handle->_assert_ssl;
+
+    my $agent = exists($request->{headers}{'user-agent'})
+        ? $request->{headers}{'user-agent'} : $self->{agent};
+
+    my $connect_request = {
+        method    => 'CONNECT',
+        uri       => "$request->{host}:$request->{port}",
+        headers   => {
+            host => "$request->{host}:$request->{port}",
+            'user-agent' => $agent,
+        }
+    };
+
+    if ( $request->{headers}{'proxy-authorization'} ) {
+        $connect_request->{headers}{'proxy-authorization'} =
+            delete $request->{headers}{'proxy-authorization'};
+    }
+
+    $handle->write_request($connect_request);
+    my $response;
+    do { $response = $handle->read_response_header }
+        until (substr($response->{status},0,1) ne '1');
+
+    # if CONNECT failed, throw the response so it will be
+    # returned from the original request() method;
+    unless (substr($response->{status},0,1) eq '2') {
+        die $response;
+    }
+
+    # tunnel established, so start SSL handshake
+    $handle->start_ssl( $request->{host} );
+
+    return;
 }
 
 sub _prepare_headers_and_cb {
@@ -446,11 +440,18 @@ sub _prepare_headers_and_cb {
     }
 
     # if we have Basic auth parameters, add them
-# RPW
-#    if ( length $auth && ! defined $request->{headers}{authorization} ) {
-#        $self->_add_basic_auth_header( $request, 'authorization' => $auth );
-#    }
+    if ( length $auth && ! defined $request->{headers}{authorization} ) {
+        $self->_add_basic_auth_header( $request, 'authorization' => $auth );
+    }
 
+    return;
+}
+
+sub _add_basic_auth_header {
+    my ($self, $request, $header, $auth) = @_;
+    require MIME::Base64;
+    $request->{headers}{$header} =
+        "Basic " . MIME::Base64::encode_base64($auth, "");
     return;
 }
 
@@ -472,6 +473,31 @@ sub _prepare_data_cb {
         }
     }
     return $data_cb;
+}
+
+sub _update_cookie_jar {
+    my ($self, $url, $response) = @_;
+
+    my $cookies = $response->{headers}->{'set-cookie'};
+    return unless defined $cookies;
+
+    my @cookies = ref $cookies ? @$cookies : $cookies;
+
+    $self->cookie_jar->add( $url, $_ ) for @cookies;
+
+    return;
+}
+
+sub _validate_cookie_jar {
+    my ($class, $jar) = @_;
+
+    # duck typing
+    for my $method ( qw/add cookie_header/ ) {
+        Carp::croak(qq/Cookie jar must provide the '$method' method\n/)
+            unless ref($jar) && ref($jar)->can($method);
+    }
+
+    return;
 }
 
 sub _maybe_redirect {
@@ -615,12 +641,10 @@ sub connect {
     @_ == 4 || die(q/Usage: $handle->connect(scheme, host, port)/ . "\n");
     my ($self, $scheme, $host, $port) = @_;
 
-# RPW
-#    if ( $scheme eq 'https' ) {
-#        $self->_assert_ssl;
-#    }
-#    elsif ( $scheme ne 'http' ) {
-	if ( $scheme ne 'http' ) {
+    if ( $scheme eq 'https' ) {
+        $self->_assert_ssl;
+    }
+    elsif ( $scheme ne 'http' ) {
       die(qq/Unsupported URL scheme '$scheme'\n/);
     }
     $self->{fh} = $SOCKET_CLASS->new(
@@ -637,8 +661,7 @@ sub connect {
     binmode($self->{fh})
       or die(qq/Could not binmode() socket: '$!'\n/);
 
-# RPW	  
-#    $self->start_ssl($host) if $scheme eq 'https';
+    $self->start_ssl($host) if $scheme eq 'https';
 
     $self->{scheme} = $scheme;
     $self->{host} = $host;
@@ -647,6 +670,35 @@ sub connect {
     $self->{tid} = _get_tid();
 
     return $self;
+}
+
+sub start_ssl {
+    my ($self, $host) = @_;
+
+    # As this might be used via CONNECT after an SSL session
+    # to a proxy, we shut down any existing SSL before attempting
+    # the handshake
+    if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
+        unless ( $self->{fh}->stop_SSL ) {
+            my $ssl_err = IO::Socket::SSL->errstr;
+            die(qq/Error halting prior SSL connection: $ssl_err/);
+        }
+    }
+
+    my $ssl_args = $self->_ssl_args($host);
+    IO::Socket::SSL->start_SSL(
+        $self->{fh},
+        %$ssl_args,
+        SSL_create_ctx_callback => sub {
+            my $ctx = shift;
+            Net::SSLeay::CTX_set_mode($ctx, Net::SSLeay::MODE_AUTO_RETRY());
+        },
+    );
+
+    unless ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
+        my $ssl_err = IO::Socket::SSL->errstr;
+        die(qq/SSL connection failed for $host: $ssl_err\n/);
+    }
 }
 
 sub close {
@@ -1047,6 +1099,15 @@ sub can_write {
     return $self->_do_timeout('write', @_)
 }
 
+sub _assert_ssl {
+    # Need IO::Socket::SSL 1.42 for SSL_create_ctx_callback
+    die(qq/IO::Socket::SSL 1.42 must be installed for https support\n/)
+        unless eval {require IO::Socket::SSL; IO::Socket::SSL->VERSION(1.42)};
+    # Need Net::SSLeay 1.49 for MODE_AUTO_RETRY
+    die(qq/Net::SSLeay 1.49 must be installed for https support\n/)
+        unless eval {require Net::SSLeay; Net::SSLeay->VERSION(1.49)};
+}
+
 sub can_reuse {
     my ($self,$scheme,$host,$port) = @_;
     return 0 if
@@ -1061,12 +1122,70 @@ sub can_reuse {
         return 1;
 }
 
+# Try to find a CA bundle to validate the SSL cert,
+# prefer Mozilla::CA or fallback to a system file
+sub _find_CA_file {
+    my $self = shift();
+
+    return $self->{SSL_options}->{SSL_ca_file}
+        if $self->{SSL_options}->{SSL_ca_file} and -e $self->{SSL_options}->{SSL_ca_file};
+
+    return Mozilla::CA::SSL_ca_file()
+        if eval { require Mozilla::CA };
+
+    # cert list copied from golang src/crypto/x509/root_unix.go
+    foreach my $ca_bundle (
+        "/etc/ssl/certs/ca-certificates.crt",     # Debian/Ubuntu/Gentoo etc.
+        "/etc/pki/tls/certs/ca-bundle.crt",       # Fedora/RHEL
+        "/etc/ssl/ca-bundle.pem",                 # OpenSUSE
+        "/etc/openssl/certs/ca-certificates.crt", # NetBSD
+        "/etc/ssl/cert.pem",                      # OpenBSD
+        "/usr/local/share/certs/ca-root-nss.crt", # FreeBSD/DragonFly
+        "/etc/pki/tls/cacert.pem",                # OpenELEC
+        "/etc/certs/ca-certificates.crt",         # Solaris 11.2+
+    ) {
+        return $ca_bundle if -e $ca_bundle;
+    }
+
+    die qq/Couldn't find a CA bundle with which to verify the SSL certificate.\n/
+      . qq/Try installing Mozilla::CA from CPAN\n/;
+}
+
 # for thread safety, we need to know thread id if threads are loaded
 sub _get_tid {
     no warnings 'reserved'; # for 'threads'
     return threads->can("tid") ? threads->tid : 0;
 }
 
+sub _ssl_args {
+    my ($self, $host) = @_;
+
+    my %ssl_args;
+
+    # This test reimplements IO::Socket::SSL::can_client_sni(), which wasn't
+    # added until IO::Socket::SSL 1.84
+    if ( Net::SSLeay::OPENSSL_VERSION_NUMBER() >= 0x01000000 ) {
+        $ssl_args{SSL_hostname} = $host,          # Sane SNI support
+    }
+
+    if ($self->{verify_SSL}) {
+        $ssl_args{SSL_verifycn_scheme}  = 'http'; # enable CN validation
+        $ssl_args{SSL_verifycn_name}    = $host;  # set validation hostname
+        $ssl_args{SSL_verify_mode}      = 0x01;   # enable cert validation
+        $ssl_args{SSL_ca_file}          = $self->_find_CA_file;
+    }
+    else {
+        $ssl_args{SSL_verifycn_scheme}  = 'none'; # disable CN validation
+        $ssl_args{SSL_verify_mode}      = 0x00;   # disable cert validation
+    }
+
+    # user options override settings from verify_SSL
+    for my $k ( keys %{$self->{SSL_options}} ) {
+        $ssl_args{$k} = $self->{SSL_options}{$k} if $k =~ m/^SSL_/;
+    }
+
+    return \%ssl_args;
+}
 
 1;
 
