@@ -466,10 +466,11 @@ sub connect {
     @_ == 4 || die(q/Usage: $handle->connect(scheme, host, port)/ . "\n");
     my ($self, $scheme, $host, $port) = @_;
 
-    if ( $scheme eq 'https' ) {
-        $self->_assert_ssl;
-    }
-    elsif ( $scheme ne 'http' ) {
+#    if ( $scheme eq 'https' ) {
+#        $self->_assert_ssl;
+#    }
+#    elsif ( $scheme ne 'http' ) {
+	if ( $scheme ne 'http' ) {
       die(qq/Unsupported URL scheme '$scheme'\n/);
     }
     $self->{fh} = $SOCKET_CLASS->new(
@@ -486,7 +487,7 @@ sub connect {
     binmode($self->{fh})
       or die(qq/Could not binmode() socket: '$!'\n/);
 
-    $self->start_ssl($host) if $scheme eq 'https';
+#    $self->start_ssl($host) if $scheme eq 'https';
 
     $self->{scheme} = $scheme;
     $self->{host} = $host;
@@ -495,35 +496,6 @@ sub connect {
     $self->{tid} = _get_tid();
 
     return $self;
-}
-
-sub start_ssl {
-    my ($self, $host) = @_;
-
-    # As this might be used via CONNECT after an SSL session
-    # to a proxy, we shut down any existing SSL before attempting
-    # the handshake
-    if ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-        unless ( $self->{fh}->stop_SSL ) {
-            my $ssl_err = IO::Socket::SSL->errstr;
-            die(qq/Error halting prior SSL connection: $ssl_err/);
-        }
-    }
-
-    my $ssl_args = $self->_ssl_args($host);
-    IO::Socket::SSL->start_SSL(
-        $self->{fh},
-        %$ssl_args,
-        SSL_create_ctx_callback => sub {
-            my $ctx = shift;
-            Net::SSLeay::CTX_set_mode($ctx, Net::SSLeay::MODE_AUTO_RETRY());
-        },
-    );
-
-    unless ( ref($self->{fh}) eq 'IO::Socket::SSL' ) {
-        my $ssl_err = IO::Socket::SSL->errstr;
-        die(qq/SSL connection failed for $host: $ssl_err\n/);
-    }
 }
 
 sub close {
@@ -924,15 +896,6 @@ sub can_write {
     return $self->_do_timeout('write', @_)
 }
 
-sub _assert_ssl {
-    # Need IO::Socket::SSL 1.42 for SSL_create_ctx_callback
-    die(qq/IO::Socket::SSL 1.42 must be installed for https support\n/)
-        unless eval {require IO::Socket::SSL; IO::Socket::SSL->VERSION(1.42)};
-    # Need Net::SSLeay 1.49 for MODE_AUTO_RETRY
-    die(qq/Net::SSLeay 1.49 must be installed for https support\n/)
-        unless eval {require Net::SSLeay; Net::SSLeay->VERSION(1.49)};
-}
-
 sub can_reuse {
     my ($self,$scheme,$host,$port) = @_;
     return 0 if
@@ -947,70 +910,12 @@ sub can_reuse {
         return 1;
 }
 
-# Try to find a CA bundle to validate the SSL cert,
-# prefer Mozilla::CA or fallback to a system file
-sub _find_CA_file {
-    my $self = shift();
-
-    return $self->{SSL_options}->{SSL_ca_file}
-        if $self->{SSL_options}->{SSL_ca_file} and -e $self->{SSL_options}->{SSL_ca_file};
-
-    return Mozilla::CA::SSL_ca_file()
-        if eval { require Mozilla::CA };
-
-    # cert list copied from golang src/crypto/x509/root_unix.go
-    foreach my $ca_bundle (
-        "/etc/ssl/certs/ca-certificates.crt",     # Debian/Ubuntu/Gentoo etc.
-        "/etc/pki/tls/certs/ca-bundle.crt",       # Fedora/RHEL
-        "/etc/ssl/ca-bundle.pem",                 # OpenSUSE
-        "/etc/openssl/certs/ca-certificates.crt", # NetBSD
-        "/etc/ssl/cert.pem",                      # OpenBSD
-        "/usr/local/share/certs/ca-root-nss.crt", # FreeBSD/DragonFly
-        "/etc/pki/tls/cacert.pem",                # OpenELEC
-        "/etc/certs/ca-certificates.crt",         # Solaris 11.2+
-    ) {
-        return $ca_bundle if -e $ca_bundle;
-    }
-
-    die qq/Couldn't find a CA bundle with which to verify the SSL certificate.\n/
-      . qq/Try installing Mozilla::CA from CPAN\n/;
-}
-
 # for thread safety, we need to know thread id if threads are loaded
 sub _get_tid {
     no warnings 'reserved'; # for 'threads'
     return threads->can("tid") ? threads->tid : 0;
 }
 
-sub _ssl_args {
-    my ($self, $host) = @_;
-
-    my %ssl_args;
-
-    # This test reimplements IO::Socket::SSL::can_client_sni(), which wasn't
-    # added until IO::Socket::SSL 1.84
-    if ( Net::SSLeay::OPENSSL_VERSION_NUMBER() >= 0x01000000 ) {
-        $ssl_args{SSL_hostname} = $host,          # Sane SNI support
-    }
-
-    if ($self->{verify_SSL}) {
-        $ssl_args{SSL_verifycn_scheme}  = 'http'; # enable CN validation
-        $ssl_args{SSL_verifycn_name}    = $host;  # set validation hostname
-        $ssl_args{SSL_verify_mode}      = 0x01;   # enable cert validation
-        $ssl_args{SSL_ca_file}          = $self->_find_CA_file;
-    }
-    else {
-        $ssl_args{SSL_verifycn_scheme}  = 'none'; # disable CN validation
-        $ssl_args{SSL_verify_mode}      = 0x00;   # disable cert validation
-    }
-
-    # user options override settings from verify_SSL
-    for my $k ( keys %{$self->{SSL_options}} ) {
-        $ssl_args{$k} = $self->{SSL_options}{$k} if $k =~ m/^SSL_/;
-    }
-
-    return \%ssl_args;
-}
 
 1;
 
