@@ -4,7 +4,7 @@ use strict;
 use warnings;
 # ABSTRACT: A small, simple, correct HTTP/1.1 client
 # RPW
-# Removed support for proxies, all POD documentation, POST forms, mirror function
+# Removed support for proxies, all POD documentation, POST forms, mirror function, SSL, cookies, authorization
 
 our $VERSION = '0.054';
 
@@ -13,12 +13,10 @@ use Carp ();
 my @attributes;
 BEGIN {
     @attributes = qw(
-        cookie_jar default_headers http_proxy https_proxy keep_alive
-        local_address max_redirect max_size proxy no_proxy timeout
-        SSL_options verify_SSL
+        default_headers keep_alive local_address max_redirect max_size timeout
     );
     my %persist_ok = map {; $_ => 1 } qw(
-        cookie_jar default_headers max_redirect max_size
+        default_headers max_redirect max_size
     );
     no strict 'refs';
     no warnings 'uninitialized';
@@ -50,8 +48,8 @@ sub new {
         max_redirect => 5,
         timeout      => 60,
         keep_alive   => 1,
-        verify_SSL   => $args{verify_SSL} || $args{verify_ssl} || 0, # no verification by default
-        no_proxy     => $ENV{no_proxy},
+#        verify_SSL   => $args{verify_SSL} || $args{verify_ssl} || 0, # no verification by default
+#        no_proxy     => $ENV{no_proxy},
     };
 
     bless $self, $class;
@@ -153,7 +151,7 @@ sub www_form_urlencode {
 
 my %DefaultPort = (
     http => 80,
-    https => 443,
+#    https => 443,
 );
 
 sub _agent {
@@ -362,8 +360,8 @@ sub _split_url {
     }
     my $port = $host =~ s/:(\d*)\z// && length $1 ? $1
              : $scheme eq 'http'                  ? 80
-             : $scheme eq 'https'                 ? 443
              : undef;
+#              : $scheme eq 'https'                 ? 443
 
     return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
 }

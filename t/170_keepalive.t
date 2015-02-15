@@ -34,8 +34,8 @@ my $h;
 new_ht();
 test_ht( "Keep-alive", 1, 'http://foo.com' );
 
-new_ht();
-test_ht( "Different scheme", 0, 'https://foo.com' );
+# new_ht();
+# test_ht( "Different scheme", 0, 'https://foo.com' );
 
 new_ht();
 test_ht( "Different host", 0, 'http://bar.com' );

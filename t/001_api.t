@@ -7,8 +7,8 @@ use Test::More tests => 2;
 use HTTP::Tiny;
 
 my @accessors = qw(
-  agent default_headers http_proxy https_proxy keep_alive local_address
-  max_redirect max_size proxy no_proxy timeout SSL_options verify_SSL cookie_jar
+  agent default_headers keep_alive local_address
+  max_redirect max_size timeout
 );
 my @methods   = qw(
   new get head put post delete request www_form_urlencode

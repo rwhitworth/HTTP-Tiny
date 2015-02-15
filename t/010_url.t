@@ -18,10 +18,11 @@ my @tests = (
     [ 'http://example.com?foo=bar#fragment', 'http',  'example.com',    80, '/?foo=bar', '',  ],
     [ 'http://example.com/path?foo=bar',     'http',  'example.com',    80, '/path?foo=bar', '',  ],
     [ 'http:///path?foo=bar',                'http',  'localhost',      80, '/path?foo=bar', '',  ],
-    [ 'HTTPS://example.com/',                'https', 'example.com',   443, '/', '',          ],
     [ 'http://[::]:1024',                    'http',  '[::]',         1024, '/', '',          ],
     [ 'xxx://foo/',                          'xxx',   'foo',         undef, '/', '',          ],
 );
+
+#    [ 'HTTPS://example.com/',                'https', 'example.com',   443, '/', '',          ],
 
 plan tests => scalar @tests;
 
