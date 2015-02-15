@@ -11,7 +11,7 @@ my @accessors = qw(
   max_redirect max_size timeout
 );
 my @methods   = qw(
-  new get head put post delete request www_form_urlencode
+  new get head put post delete request
 );
 #  new get head put post delete post_form request mirror www_form_urlencode
 
