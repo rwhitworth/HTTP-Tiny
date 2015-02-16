@@ -252,10 +252,10 @@ sub _prepare_headers_and_cb {
         }
         elsif ( length $args->{content} ) {
             my $content = $args->{content};
-            if ( $] ge '5.008' ) {
-                utf8::downgrade($content, 1)
-                    or die(qq/Wide character in request message body\n/);
-            }
+#            if ( $] ge '5.008' ) {
+#                utf8::downgrade($content, 1)
+#                    or die(qq/Wide character in request message body\n/);
+#            }
             $request->{headers}{'content-type'} ||= "application/octet-stream";
             $request->{headers}{'content-length'} = length $content
               unless $request->{headers}{'content-length'}
@@ -435,10 +435,10 @@ sub write {
     @_ == 2 || die(q/Usage: $handle->write(buf)/ . "\n");
     my ($self, $buf) = @_;
 
-    if ( $] ge '5.008' ) {
-        utf8::downgrade($buf, 1)
-            or die(qq/Wide character in write()\n/);
-    }
+#    if ( $] ge '5.008' ) {
+#        utf8::downgrade($buf, 1)
+#            or die(qq/Wide character in write()\n/);
+#    }
 
     my $len = length $buf;
     my $off = 0;
@@ -589,13 +589,13 @@ sub write_request {
     return;
 }
 
-my %HeaderCase = (
-    'content-md5'      => 'Content-MD5',
-    'etag'             => 'ETag',
-    'te'               => 'TE',
-    'www-authenticate' => 'WWW-Authenticate',
-    'x-xss-protection' => 'X-XSS-Protection',
-);
+#my %HeaderCase = (
+#    'content-md5'      => 'Content-MD5',
+#    'etag'             => 'ETag',
+#    'te'               => 'TE',
+#    'www-authenticate' => 'WWW-Authenticate',
+#    'x-xss-protection' => 'X-XSS-Protection',
+#);
 
 # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
 # combine writes.
@@ -680,10 +680,10 @@ sub write_content_body {
         defined $data && length $data
           or last;
 
-        if ( $] ge '5.008' ) {
-            utf8::downgrade($data, 1)
-                or die(qq/Wide character in write_content()\n/);
-        }
+#        if ( $] ge '5.008' ) {
+#            utf8::downgrade($data, 1)
+#                or die(qq/Wide character in write_content()\n/);
+#        }
 
         $len += $self->write($data);
     }
@@ -727,10 +727,10 @@ sub write_chunked_body {
         defined $data && length $data
           or last;
 
-        if ( $] ge '5.008' ) {
-            utf8::downgrade($data, 1)
-                or die(qq/Wide character in write_chunked_body()\n/);
-        }
+#        if ( $] ge '5.008' ) {
+#            utf8::downgrade($data, 1)
+#                or die(qq/Wide character in write_chunked_body()\n/);
+#        }
 
         $len += length $data;
 
