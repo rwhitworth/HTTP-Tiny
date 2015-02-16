@@ -355,7 +355,7 @@ use Errno      qw[EINTR EPIPE];
 use IO::Socket qw[SOCK_STREAM];
 
 # PERL_HTTP_TINY_IPV4_ONLY is a private environment variable to force old
-# behavior if someone is unable to boostrap CPAN from a new perl install; it is
+# behaviour if someone is unable to boostrap CPAN from a new perl install; it is
 # not intended for general, per-client use and may be removed in the future
 my $SOCKET_CLASS =
     $ENV{PERL_HTTP_TINY_IPV4_ONLY} ? 'IO::Socket::INET' :
@@ -589,13 +589,13 @@ sub write_request {
     return;
 }
 
-my %HeaderCase = (
-    'content-md5'      => 'Content-MD5',
-    'etag'             => 'ETag',
-    'te'               => 'TE',
-    'www-authenticate' => 'WWW-Authenticate',
-    'x-xss-protection' => 'X-XSS-Protection',
-);
+#my %HeaderCase = (
+#    'content-md5'      => 'Content-MD5',
+#    'etag'             => 'ETag',
+#    'te'               => 'TE',
+#    'www-authenticate' => 'WWW-Authenticate',
+#    'x-xss-protection' => 'X-XSS-Protection',
+#);
 
 # to avoid multiple small writes and hence nagle, you can pass the method line or anything else to
 # combine writes.
@@ -606,15 +606,15 @@ sub write_header_lines {
     my $buf = (defined $prefix_data ? $prefix_data : '');
     while (my ($k, $v) = each %$headers) {
         my $field_name = lc $k;
-        if (exists $HeaderCase{$field_name}) {
-            $field_name = $HeaderCase{$field_name};
-        }
-        else {
+#        if (exists $HeaderCase{$field_name}) {
+#            $field_name = $HeaderCase{$field_name};
+#        }
+#        else {
             $field_name =~ /\A $Token+ \z/xo
               or die(q/Invalid HTTP header field name: / . $Printable->($field_name) . "\n");
             $field_name =~ s/\b(\w)/\u$1/g;
-            $HeaderCase{lc $field_name} = $field_name;
-        }
+#            $HeaderCase{lc $field_name} = $field_name;
+#        }
         for (ref $v eq 'ARRAY' ? @$v : $v) {
             $_ = '' unless defined $_;
             $buf .= "$field_name: $_\x0D\x0A";
