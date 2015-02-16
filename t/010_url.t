@@ -11,18 +11,18 @@ my @tests = (
     [ 'HtTp://Example.com:1024/',            'http',  'example.com',  1024, '/', '',          ],
     [ 'http://example.com',                  'http',  'example.com',    80, '/', '',          ],
     [ 'http://example.com:',                 'http',  'example.com',    80, '/', '',          ],
-    [ 'http://foo@example.com:',             'http',  'example.com',    80, '/', 'foo',          ],
-    [ 'http://foo:pass@example.com:',        'http',  'example.com',    80, '/', 'foo:pass',          ],
-    [ 'http://@example.com:',                'http',  'example.com',    80, '/', '',          ],
     [ 'http://example.com?foo=bar',          'http',  'example.com',    80, '/?foo=bar', '',  ],
     [ 'http://example.com?foo=bar#fragment', 'http',  'example.com',    80, '/?foo=bar', '',  ],
     [ 'http://example.com/path?foo=bar',     'http',  'example.com',    80, '/path?foo=bar', '',  ],
-    [ 'http:///path?foo=bar',                'http',  'localhost',      80, '/path?foo=bar', '',  ],
     [ 'http://[::]:1024',                    'http',  '[::]',         1024, '/', '',          ],
-    [ 'xxx://foo/',                          'xxx',   'foo',         undef, '/', '',          ],
 );
 
 #    [ 'HTTPS://example.com/',                'https', 'example.com',   443, '/', '',          ],
+#    [ 'http://foo@example.com:',             'http',  'example.com',    80, '/', 'foo',          ],
+#    [ 'http://foo:pass@example.com:',        'http',  'example.com',    80, '/', 'foo:pass',          ],
+#    [ 'http://@example.com:',                'http',  'example.com',    80, '/', '',          ],
+#    [ 'xxx://foo/',                          'xxx',   'foo',         undef, '/', '',          ],
+#    [ 'http:///path?foo=bar',                'http',  'localhost',      80, '/path?foo=bar', '',  ],
 
 plan tests => scalar @tests;
 

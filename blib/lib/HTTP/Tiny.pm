@@ -326,21 +326,22 @@ sub _split_url {
     $scheme     = lc $scheme;
     $path_query = "/$path_query" unless $path_query =~ m<\A/>;
 
-    my $auth = '';
-    if ( (my $i = index $host, '@') != -1 ) {
-        # user:pass@host
-        $auth = substr $host, 0, $i, ''; # take up to the @ for auth
-        substr $host, 0, 1, '';          # knock the @ off the host
-
-        # userinfo might be percent escaped, so recover real auth info
-        $auth =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-    }
+#    my $auth = '';
+#    if ( (my $i = index $host, '@') != -1 ) {
+#        # user:pass@host
+#        $auth = substr $host, 0, $i, ''; # take up to the @ for auth
+#        substr $host, 0, 1, '';          # knock the @ off the host
+#
+#        # userinfo might be percent escaped, so recover real auth info
+#        $auth =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+#    }
     my $port = $host =~ s/:(\d*)\z// && length $1 ? $1
              : $scheme eq 'http'                  ? 80
              : undef;
 #              : $scheme eq 'https'                 ? 443
 
-    return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
+#    return ($scheme, (length $host ? lc $host : "localhost") , $port, $path_query, $auth);
+	return ($scheme, lc $host, $port, $path_query, '');
 }
 
 # Date conversions adapted from HTTP::Date
