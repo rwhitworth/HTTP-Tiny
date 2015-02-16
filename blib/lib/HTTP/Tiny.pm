@@ -209,8 +209,8 @@ sub _open_handle {
 
     my $handle  = HTTP::Tiny::Handle->new(
         timeout         => $self->{timeout},
-        SSL_options     => $self->{SSL_options},
-        verify_SSL      => $self->{verify_SSL},
+#        SSL_options     => $self->{SSL_options},
+#        verify_SSL      => $self->{verify_SSL},
         local_address   => $self->{local_address},
         keep_alive      => $self->{keep_alive}
     );
@@ -344,57 +344,7 @@ sub _split_url {
 	return ($scheme, lc $host, $port, $path_query, '');
 }
 
-# Date conversions adapted from HTTP::Date
-my $DoW = "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
-my $MoY = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
-sub _http_date {
-    my ($sec, $min, $hour, $mday, $mon, $year, $wday) = gmtime($_[1]);
-    return sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
-        substr($DoW,$wday*4,3),
-        $mday, substr($MoY,$mon*4,3), $year+1900,
-        $hour, $min, $sec
-    );
-}
 
-sub _parse_http_date {
-    my ($self, $str) = @_;
-    require Time::Local;
-    my @tl_parts;
-    if ($str =~ /^[SMTWF][a-z]+, +(\d{1,2}) ($MoY) +(\d\d\d\d) +(\d\d):(\d\d):(\d\d) +GMT$/) {
-        @tl_parts = ($6, $5, $4, $1, (index($MoY,$2)/4), $3);
-    }
-    elsif ($str =~ /^[SMTWF][a-z]+, +(\d\d)-($MoY)-(\d{2,4}) +(\d\d):(\d\d):(\d\d) +GMT$/ ) {
-        @tl_parts = ($6, $5, $4, $1, (index($MoY,$2)/4), $3);
-    }
-    elsif ($str =~ /^[SMTWF][a-z]+ +($MoY) +(\d{1,2}) +(\d\d):(\d\d):(\d\d) +(?:[^0-9]+ +)?(\d\d\d\d)$/ ) {
-        @tl_parts = ($5, $4, $3, $2, (index($MoY,$1)/4), $6);
-    }
-    return eval {
-        my $t = @tl_parts ? Time::Local::timegm(@tl_parts) : -1;
-        $t < 0 ? undef : $t;
-    };
-}
-
-# URI escaping adapted from URI::Escape
-# c.f. http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.1
-# perl 5.6 ready UTF-8 encoding adapted from JSON::PP
-my %escapes = map { chr($_) => sprintf("%%%02X", $_) } 0..255;
-$escapes{' '}="+";
-my $unsafe_char = qr/[^A-Za-z0-9\-\._~]/;
-
-sub _uri_escape {
-    my ($self, $str) = @_;
-    if ( $] ge '5.008' ) {
-        utf8::encode($str);
-    }
-    else {
-        $str = pack("U*", unpack("C*", $str)) # UTF-8 encode a byte string
-            if ( length $str == do { use bytes; length $str } );
-        $str = pack("C*", unpack("C*", $str)); # clear UTF-8 flag
-    }
-    $str =~ s/($unsafe_char)/$escapes{$1}/ge;
-    return $str;
-}
 
 package
     HTTP::Tiny::Handle; # hide from PAUSE/indexers
@@ -432,8 +382,8 @@ sub new {
         timeout          => 60,
         max_line_size    => 16384,
         max_header_lines => 64,
-        verify_SSL       => 0,
-        SSL_options      => {},
+#        verify_SSL       => 0,
+#        SSL_options      => {},
         %args
     }, $class;
 }
