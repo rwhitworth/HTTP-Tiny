@@ -209,8 +209,8 @@ sub _open_handle {
 
     my $handle  = HTTP::Tiny::Handle->new(
         timeout         => $self->{timeout},
-        SSL_options     => $self->{SSL_options},
-        verify_SSL      => $self->{verify_SSL},
+#        SSL_options     => $self->{SSL_options},
+#        verify_SSL      => $self->{verify_SSL},
         local_address   => $self->{local_address},
         keep_alive      => $self->{keep_alive}
     );
@@ -382,8 +382,8 @@ sub new {
         timeout          => 60,
         max_line_size    => 16384,
         max_header_lines => 64,
-        verify_SSL       => 0,
-        SSL_options      => {},
+#        verify_SSL       => 0,
+#        SSL_options      => {},
         %args
     }, $class;
 }
